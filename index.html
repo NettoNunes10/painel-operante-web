@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Controle - Condicionamento Operante</title>
+    
+    <!-- Melhoria de SEO básica conforme boas práticas -->
+    <meta name="description" content="Painel de controle virtual de laboratório para condicionamento operante de animais, substituindo hardware Arduino com Web Audio API.">
+    
+    <!-- Fontes Modernas: Inter para a interface e Share Tech Mono para o LCD -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <style>
+        /* =========================================
+           Design System & Tokens (Premium Look)
+           ========================================= */
+        :root {
+            /* Paleta de cores profundas para dar um ar profissional de "laboratório noturno" */
+            --bg-dark: #0f172a;        /* Slate 900 */
+            --bg-darker: #020617;      /* Slate 950 */
+            --panel-bg: rgba(30, 41, 59, 0.7);
+            
+            /* Cores específicas do LCD para simular hardware real */
+            --lcd-bg: #011526;
+            --lcd-text: #4ade80;       /* Verde claro */
+            --lcd-glow: rgba(74, 222, 128, 0.6);
+            
+            /* Botões e Interface */
+            --btn-bg: linear-gradient(145deg, #1e293b, #0f172a);
+            --btn-hover: linear-gradient(145deg, #334155, #1e293b);
+            --btn-border: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+        }
+
+        /* Reset Básico */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Estrutura Principal */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top left, var(--bg-dark), var(--bg-darker));
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            /* Previne seleção acidental de texto ao clicar nos botões */
+            user-select: none; 
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--panel-bg);
+            /* Efeito Glassmorphism premium */
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+            color: var(--text-primary);
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: 8px;
+        }
+
+        /* =========================================
+           Componente: Visor LCD
+           ========================================= */
+        .lcd-frame {
+            background: #0f172a;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #020617;
+            /* Sombra interna para parecer embutido no painel */
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.1);
+            margin-bottom: 40px;
+        }
+
+        .lcd-screen {
+            position: relative;
+            background-color: var(--lcd-bg);
+            border-radius: 6px;
+            padding: 24px;
+            height: 140px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            overflow: hidden;
+        }
+
+        /* Efeito de Scanline (linhas horizontais sutis simulando display digital) */
+        .lcd-screen::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0,0,0,0.15),
+                rgba(0,0,0,0.15) 2px,
+                transparent 2px,
+                transparent 4px
+            );
+            pointer-events: none;
+        }
+
+        .lcd-line {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--lcd-text);
+            font-size: 2rem;
+            /* Brilho digital (Glow) */
+            text-shadow: 0 0 5px var(--lcd-glow), 0 0 10px var(--lcd-glow);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            line-height: 1.5;
+            width: 100%;
+            text-align: center;
+            transition: opacity 0.05s ease;
+        }
+
+        /* =========================================
+           Componente: Botões de Ação
+           ========================================= */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        /* Layout responsivo: 3 colunas em telas maiores */
+        @media (min-width: 640px) {
+            .controls-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 24px;
+            }
+        }
+
+        .action-btn {
+            background: var(--btn-bg);
+            border: 1px solid var(--btn-border);
+            color: var(--text-primary);
+            padding: 24px 16px;
+            border-radius: 16px;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            outline: none;
+        }
+
+        /* Reflexo superior sutil no botão */
+        .action-btn::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        }
+
+        /* Efeitos de Hover (apenas se não estiver desabilitado) */
+        .action-btn:hover:not(:disabled) {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+            border-color: #475569;
+            background: var(--btn-hover);
+        }
+
+        /* Efeitos de Clique Ativo */
+        .action-btn:active:not(:disabled) {
+            transform: translateY(2px);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Estado Bloqueado (Disabled) */
+        .action-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            background: #0f172a;
+        }
+
+        .btn-text {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .btn-subtext {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* Ajustes de Responsividade para telas muito pequenas */
+        @media (max-width: 480px) {
+            .lcd-line {
+                font-size: 1.3rem;
+                letter-spacing: 1px;
+            }
+            .app-container {
+                padding: 20px;
+            }
+            .lcd-screen {
+                padding: 16px;
+                height: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <main class="app-container">
+        <header class="header">
+            <h1>Controle de Operante</h1>
+            <p>Painel de Laboratório Virtual</p>
+        </header>
+
+        <!-- Visor LCD -->
+        <div class="lcd-frame">
+            <div class="lcd-screen" id="lcd-screen" aria-live="polite">
+                <div class="lcd-line" id="line1">SISTEMA PRONTO</div>
+                <div class="lcd-line" id="line2">Aguardando...</div>
+            </div>
+        </div>
+        
+        <!-- Botões de Ação -->
+        <div class="controls-grid">
+            <button class="action-btn" id="btn1" onclick="handleAction(1)" aria-label="Acionar Baia 1 Liso">
+                <span class="btn-text">Baia 1</span>
+                <span class="btn-subtext">(Liso)</span>
+            </button>
+            <button class="action-btn" id="btn2" onclick="handleAction(2)" aria-label="Acionar Baia 2 Ondulado">
+                <span class="btn-text">Baia 2</span>
+                <span class="btn-subtext">(Ondulado)</span>
+            </button>
+            <button class="action-btn" id="btn3" onclick="handleAction(3)" aria-label="Acionar Baia 3 Áspero">
+                <span class="btn-text">Baia 3</span>
+                <span class="btn-subtext">(Áspero)</span>
+            </button>
+        </div>
+    </main>
+
+    <script>
+        /**
+         * =========================================
+         * LÓGICA DO APLICATIVO (Vanilla JavaScript)
+         * =========================================
+         */
+
+        // O contexto da Web Audio API precisa ser global, mas deve ser 
+        // inicializado/resumido apenas após interação do usuário (política do navegador)
+        let audioCtx;
+
+        // Referências ao DOM
+        const line1 = document.getElementById('line1');
+        const line2 = document.getElementById('line2');
+        const buttons = document.querySelectorAll('.action-btn');
+
+        /**
+         * Inicializa e garante que o contexto de áudio está ativo.
+         */
+        function initAudio() {
+            if (!audioCtx) {
+                // Suporte cross-browser para AudioContext
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        /**
+         * Promisify do setTimeout para usar com async/await e facilitar a leitura do código.
+         * @param {number} ms - Milissegundos para aguardar.
+         * @returns {Promise}
+         */
+        function wait(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        /**
+         * Gera uma frequência sonora simulando um Buzzer passivo de Arduino.
+         * @param {number} frequency - Frequência em Hertz.
+         * @param {number} durationMs - Duração do bipe em milissegundos.
+         * @returns {Promise} Resolve quando o som terminar de tocar.
+         */
+        function playTone(frequency, durationMs) {
+            return new Promise(resolve => {
+                initAudio();
+
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                // Tipo 'square' simula perfeitamente o som robótico/áspero de um buzzer
+                oscillator.type = 'square'; 
+                oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+                
+                // Envelope de volume para evitar 'clicks' estalados quando o áudio liga/desliga
+                const volume = 0.05; // Volume confortável
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                // Ramp rápido de ataque
+                gainNode.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + 0.01); 
+                // Mantém o volume
+                gainNode.gain.setValueAtTime(volume, audioCtx.currentTime + (durationMs/1000) - 0.01);
+                // Ramp rápido de release
+                gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + (durationMs/1000));
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + (durationMs / 1000));
+                
+                // Resolve a Promise quando a duração do som terminar
+                setTimeout(resolve, durationMs);
+            });
+        }
+
+        /**
+         * Atualiza as linhas de texto do LCD com um leve efeito visual (flicker).
+         * @param {string} text1 - Texto para a Linha 1.
+         * @param {string} text2 - Texto para a Linha 2.
+         */
+        function updateLCD(text1, text2) {
+            // Efeito visual sutil de queda de energia momentânea do display
+            line1.style.opacity = '0.5';
+            line2.style.opacity = '0.5';
+            
+            setTimeout(() => {
+                line1.textContent = text1;
+                line2.textContent = text2;
+                line1.style.opacity = '1';
+                line2.style.opacity = '1';
+            }, 50);
+        }
+
+        /**
+         * Altera o estado (disabled) de todos os botões simultaneamente.
+         * @param {boolean} disabled - True para bloquear, False para liberar.
+         */
+        function setButtonsDisabled(disabled) {
+            buttons.forEach(btn => btn.disabled = disabled);
+        }
+
+        /**
+         * Função central chamada quando o usuário clica em um botão.
+         * Ela orquestra a lógica de bloqueio, atualização da UI e sequências de áudio.
+         * @param {number} baiaNum - O identificador da baia (1, 2 ou 3).
+         */
+        async function handleAction(baiaNum) {
+            initAudio();
+            
+            // Regra de Bloqueio: desabilita todos os botões imediatamente
+            setButtonsDisabled(true);
+            
+            // Marca o tempo de início para garantirmos exatamente 3000ms de duração total
+            const startTime = Date.now();
+            
+            // Avalia qual ação foi disparada
+            if (baiaNum === 1) {
+                updateLCD("TESTE ATIVO:", "BAIA 1 - LISO");
+                // Áudio: 3 bipes curtos (1200Hz, 150ms de som, 100ms de pausa)
+                await playTone(1200, 150);
+                await wait(100);
+                await playTone(1200, 150);
+                await wait(100);
+                await playTone(1200, 150);
+            } 
+            else if (baiaNum === 2) {
+                updateLCD("TESTE ATIVO:", "BAIA 2 - ONDUL");
+                // Áudio: 1 bipe longo (800Hz, 1200ms)
+                await playTone(800, 1200);
+            } 
+            else if (baiaNum === 3) {
+                updateLCD("TESTE ATIVO:", "BAIA 3 - ASPERO");
+                // Áudio: Sirene alternada (800Hz e 1200Hz por 300ms cada, 2 vezes)
+                await playTone(800, 300);
+                await playTone(1200, 300);
+                await playTone(800, 300);
+                await playTone(1200, 300);
+            }
+            
+            // Calcula quanto tempo passou tocando o áudio
+            const elapsed = Date.now() - startTime;
+            
+            // Se as ações foram mais rápidas que 3000ms, aguarda a diferença
+            const remainingTime = 3000 - elapsed;
+            if (remainingTime > 0) {
+                await wait(remainingTime);
+            }
+            
+            // Ciclo concluído, retorna ao estado Standby
+            updateLCD("SISTEMA PRONTO", "Aguardando...");
+            setButtonsDisabled(false);
+        }
+    </script>
+</body>
+</html>

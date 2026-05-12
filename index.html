@@ -399,16 +399,16 @@
             } 
             else if (baiaNum === 2) {
                 updateLCD("TESTE ATIVO:", "BAIA 2 - ONDULADO");
-                // Áudio: 1 bipe longo (800Hz, 1200ms)
-                await playTone(800, 1200);
-            } 
-            else if (baiaNum === 3) {
-                updateLCD("TESTE ATIVO:", "BAIA 3 - LISO");
                 // Áudio: Sirene alternada (800Hz e 1200Hz por 300ms cada, 2 vezes)
                 await playTone(800, 300);
                 await playTone(1200, 300);
                 await playTone(800, 300);
                 await playTone(1200, 300);
+            } 
+            else if (baiaNum === 3) {
+                updateLCD("TESTE ATIVO:", "BAIA 3 - LISO");
+                // Áudio: 1 bipe longo (800Hz, 1200ms)
+                await playTone(800, 1200);
             }
             
             // Calcula quanto tempo passou tocando o áudio

@@ -255,17 +255,17 @@
         
         <!-- Botões de Ação -->
         <div class="controls-grid">
-            <button class="action-btn" id="btn1" onclick="handleAction(1)" aria-label="Acionar Baia 1 Liso">
+            <button class="action-btn" id="btn1" onclick="handleAction(1)" aria-label="Acionar Baia 1 Áspero">
                 <span class="btn-text">Baia 1</span>
-                <span class="btn-subtext">(Liso)</span>
+                <span class="btn-subtext">(Áspero)</span>
             </button>
             <button class="action-btn" id="btn2" onclick="handleAction(2)" aria-label="Acionar Baia 2 Ondulado">
                 <span class="btn-text">Baia 2</span>
                 <span class="btn-subtext">(Ondulado)</span>
             </button>
-            <button class="action-btn" id="btn3" onclick="handleAction(3)" aria-label="Acionar Baia 3 Áspero">
+            <button class="action-btn" id="btn3" onclick="handleAction(3)" aria-label="Acionar Baia 3 Liso">
                 <span class="btn-text">Baia 3</span>
-                <span class="btn-subtext">(Áspero)</span>
+                <span class="btn-subtext">(Liso)</span>
             </button>
         </div>
     </main>
@@ -388,7 +388,7 @@
             
             // Avalia qual ação foi disparada
             if (baiaNum === 1) {
-                updateLCD("TESTE ATIVO:", "BAIA 1 - LISO");
+                updateLCD("TESTE ATIVO:", "BAIA 1 - ÁSPERO");
                 // Áudio: 3 bipes curtos (1200Hz, 150ms de som, 100ms de pausa)
                 await playTone(1200, 150);
                 await wait(100);
@@ -397,12 +397,12 @@
                 await playTone(1200, 150);
             } 
             else if (baiaNum === 2) {
-                updateLCD("TESTE ATIVO:", "BAIA 2 - ONDUL");
+                updateLCD("TESTE ATIVO:", "BAIA 2 - ONDULADO");
                 // Áudio: 1 bipe longo (800Hz, 1200ms)
                 await playTone(800, 1200);
             } 
             else if (baiaNum === 3) {
-                updateLCD("TESTE ATIVO:", "BAIA 3 - ASPERO");
+                updateLCD("TESTE ATIVO:", "BAIA 3 - LISO");
                 // Áudio: Sirene alternada (800Hz e 1200Hz por 300ms cada, 2 vezes)
                 await playTone(800, 300);
                 await playTone(1200, 300);

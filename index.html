@@ -289,13 +289,13 @@
         /**
          * Inicializa e garante que o contexto de áudio está ativo.
          */
-        function initAudio() {
+        async function initAudio() {
             if (!audioCtx) {
                 // Suporte cross-browser para AudioContext
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
             if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
+                await audioCtx.resume();
             }
         }
 
@@ -314,9 +314,10 @@
          * @param {number} durationMs - Duração do bipe em milissegundos.
          * @returns {Promise} Resolve quando o som terminar de tocar.
          */
-        function playTone(frequency, durationMs) {
+        async function playTone(frequency, durationMs) {
+            await initAudio();
+
             return new Promise(resolve => {
-                initAudio();
 
                 const oscillator = audioCtx.createOscillator();
                 const gainNode = audioCtx.createGain();
@@ -378,7 +379,7 @@
          * @param {number} baiaNum - O identificador da baia (1, 2 ou 3).
          */
         async function handleAction(baiaNum) {
-            initAudio();
+            await initAudio();
             
             // Regra de Bloqueio: desabilita todos os botões imediatamente
             setButtonsDisabled(true);
